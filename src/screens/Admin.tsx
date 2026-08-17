@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, MatchConfig } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Settings, Users, Download, UserPlus, Trash2, AlertCircle, Check, RotateCcw } from 'lucide-react';
+import { clearQueue } from '@/lib/offline';
+import { Settings, Users, Download, UserPlus, Trash2, CircleAlert as AlertCircle, Check, RotateCcw } from 'lucide-react';
 
 type Tab = 'bonus' | 'users' | 'export' | 'reset';
 
@@ -422,6 +423,7 @@ function ResetTab() {
       return;
     }
     if (data) {
+      clearQueue();
       setDone(true);
       setConfirming(false);
       setTimeout(() => setDone(false), 4000);

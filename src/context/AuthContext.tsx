@@ -17,13 +17,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored) setUser(JSON.parse(stored));
-    } catch {
-      // ignore
+    let cancelled = false;
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    let parsed: Utilisateur | null = null;
+    try {
+      parsed = JSON.parse(stored);
+    } catch {
+      sessionStorage.removeItem(STORAGE_KEY);
+      setLoading(false);
+      return;
+    }
+    // Validate the stored session still exists in the database
+    // (a reset may have deleted non-organisateur accounts)
+    supabase
+      .from('utilisateurs')
+      .select('id')
+      .eq('id', parsed!.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data) {
+          setUser(parsed);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setUser(parsed);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (pin: string) => {

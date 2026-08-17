@@ -33,6 +33,11 @@ export function getQueueLength(): number {
   return readQueue().length;
 }
 
+export function clearQueue(): void {
+  writeQueue([]);
+  window.dispatchEvent(new Event('sync-queue-changed'));
+}
+
 export async function syncQueue(): Promise<{ synced: number; failed: number }> {
   const q = readQueue();
   if (q.length === 0) return { synced: 0, failed: 0 };
