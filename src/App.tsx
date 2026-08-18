@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function MainApp() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>('dashboard');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -45,6 +45,20 @@ function MainApp() {
     window.addEventListener('hashchange', checkHash);
     return () => window.removeEventListener('hashchange', checkHash);
   }, []);
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Droplet className="w-6 h-6 text-white" fill="currentColor" />
+          </div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (screen === 'public') {
     return <PublicView onExit={() => setScreen('dashboard')} />;

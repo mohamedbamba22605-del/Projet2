@@ -30,19 +30,20 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // TEMPORARILY DISABLED for iOS debugging
       // Register service worker with better error handling for iOS
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered:', registration);
-            })
-            .catch((error) => {
-              console.log('SW registration failed:', error);
-              // Don't block app if SW fails
-            });
-        });
-      }
+      // if ('serviceWorker' in navigator) {
+      //   window.addEventListener('load', () => {
+      //     navigator.serviceWorker.register('/sw.js')
+      //       .then((registration) => {
+      //         console.log('SW registered:', registration);
+      //       })
+      //       .catch((error) => {
+      //         console.log('SW registration failed:', error);
+      //         // Don't block app if SW fails
+      //       });
+      //   });
+      // }
     </script>
   </body>
 </html>
