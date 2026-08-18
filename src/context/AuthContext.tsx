@@ -12,6 +12,32 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = 'lmc_user';
 
+// Safe storage wrapper for Safari private mode
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return sessionStorage.getItem(key);
+    } catch (e) {
+      console.warn('SessionStorage not available (private mode?)');
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('SessionStorage not available (private mode?)');
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      sessionStorage.removeItem(key);
+    } catch (e) {
+      console.warn('SessionStorage not available (private mode?)');
+    }
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Utilisateur | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, 5000); // 5 second timeout
     
-    const stored = sessionStorage.getItem(STORAGE_KEY);
+    const stored = safeStorage.getItem(STORAGE_KEY);
     if (!stored) {
       console.log('AuthContext: No stored session');
       setLoading(false);
@@ -41,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: Found stored session for user:', parsed?.id);
     } catch {
       console.error('AuthContext: Failed to parse stored session');
-      sessionStorage.removeItem(STORAGE_KEY);
+      safeStorage.removeItem(STORAGE_KEY);
       setLoading(false);
       clearTimeout(timeoutId);
       return;
@@ -66,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(parsed);
         } else {
           console.log('AuthContext: Session no longer valid');
-          sessionStorage.removeItem(STORAGE_KEY);
+          safeStorage.removeItem(STORAGE_KEY);
         }
         setLoading(false);
       })
@@ -92,13 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const u: Utilisateur = { id: data[0].v_id, prenom: data[0].v_prenom, role: data[0].v_role };
     setUser(u);
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     return { success: true };
   };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem(STORAGE_KEY);
+    safeStorage.removeItem(STORAGE_KEY);
   };
 
   return (

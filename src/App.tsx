@@ -9,6 +9,7 @@ import { Admin } from '@/screens/Admin';
 import { PublicView } from '@/screens/PublicView';
 import { SyncIndicator } from '@/components/SyncIndicator';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { DebugLog } from '@/components/DebugLog';
 import { Droplet, LayoutDashboard, UserPlus, ClipboardList, CheckSquare, Settings, LogOut, Globe } from 'lucide-react';
 import type { Role } from '@/lib/supabase';
 
@@ -137,6 +138,7 @@ function MainApp() {
 function App() {
   return (
     <AuthProvider>
+      <DebugLog />
       <MainApp />
     </AuthProvider>
   );
