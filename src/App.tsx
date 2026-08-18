@@ -74,7 +74,7 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10 safe-area-top">
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 safe-area-top">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center">
@@ -102,7 +102,7 @@ function MainApp() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-md mx-auto w-full px-4 py-4">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 py-4 pt-20 pb-20">
         {screen === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
         {screen === 'saisie' && <SaisieJ1 onSaved={triggerRefresh} />}
         {screen === 'inscription' && <InscriptionContinue />}
@@ -111,7 +111,7 @@ function MainApp() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="bg-white border-t border-gray-200 sticky bottom-0 safe-area-bottom">
+      <nav className="bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
         <div className="max-w-md mx-auto px-2 py-1.5 flex justify-around">
           {visibleNav.map((item) => (
             <button
