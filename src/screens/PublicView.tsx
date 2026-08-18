@@ -20,7 +20,7 @@ export function PublicView({ onExit }: { onExit?: () => void }) {
 
   if (loading || !stats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-900 flex items-center justify-center safe-area-top safe-area-bottom">
         <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     );
@@ -30,7 +30,7 @@ export function PublicView({ onExit }: { onExit?: () => void }) {
   const winning = stats.scoreGarcons > stats.scoreFilles ? 'garcons' : stats.scoreFilles > stats.scoreGarcons ? 'filles' : 'egalite';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-600 via-red-700 to-red-900 p-4 safe-area-top safe-area-bottom">
       <div className="max-w-md mx-auto pt-8 pb-12">
         {/* Exit button */}
         {onExit && (

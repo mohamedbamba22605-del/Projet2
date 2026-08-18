@@ -74,7 +74,7 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className="bg-white shadow-sm sticky top-0 z-10 safe-area-top">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center">
@@ -111,7 +111,7 @@ function MainApp() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="bg-white border-t border-gray-200 sticky bottom-0">
+      <nav className="bg-white border-t border-gray-200 sticky bottom-0 safe-area-bottom">
         <div className="max-w-md mx-auto px-2 py-1.5 flex justify-around">
           {visibleNav.map((item) => (
             <button
