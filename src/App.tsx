@@ -72,9 +72,9 @@ function MainApp() {
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm flex-shrink-0 safe-area-top">
+      <header className="bg-white shadow-sm flex-shrink-0 safe-area-top z-10">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center">
@@ -111,7 +111,7 @@ function MainApp() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="bg-white border-t border-gray-200 flex-shrink-0 safe-area-bottom">
+      <nav className="bg-white border-t border-gray-200 flex-shrink-0 safe-area-bottom z-10">
         <div className="max-w-md mx-auto px-2 py-1.5 flex justify-around">
           {visibleNav.map((item) => (
             <button
