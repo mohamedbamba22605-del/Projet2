@@ -102,7 +102,7 @@ function MainApp() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 py-4 pb-16" style={{ WebkitOverflowScrolling: 'touch' }}>
         {screen === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
         {screen === 'saisie' && <SaisieJ1 onSaved={triggerRefresh} />}
         {screen === 'inscription' && <InscriptionContinue />}
@@ -111,7 +111,7 @@ function MainApp() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="bg-white border-t border-gray-200 flex-shrink-0 z-10">
+      <nav className="bg-white border-t border-gray-200 absolute bottom-0 left-0 right-0 z-10">
         <div className="max-w-md mx-auto px-2 flex justify-around">
           {visibleNav.map((item) => (
             <button
