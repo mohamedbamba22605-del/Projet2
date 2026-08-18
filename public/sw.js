@@ -1,5 +1,57 @@
-const CACHE_NAME = 'le-match-continue-v1';
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = 'le-match-continue-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
+];
+
+// Cache strategies
+const CACHE_STRATEGIES = {
+  // Cache first, fallback to network (for static assets)
+  cacheFirst: async (request) => {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  },
+  
+  // Network first, fallback to cache (for API calls)
+  networkFirst: async (request) => {
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    } catch (error) {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      throw error;
+    }
+  },
+  
+  // Stale while revalidate (for HTML and dynamic content)
+  staleWhileRevalidate: async (request) => {
+    const cached = await caches.match(request);
+    const fetchPromise = fetch(request).then((networkResponse) => {
+      if (networkResponse.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    });
+    
+    return cached || fetchPromise;
+  }
+};
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -19,22 +71,32 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-
-  // Network-first for API calls, cache-first for static assets
-  if (url.origin === location.origin && event.request.method === 'GET') {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return (
-          cached ||
-          fetch(event.request)
-            .then((response) => {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-              return response;
-            })
-            .catch(() => cached)
-        );
-      })
-    );
+  
+  // Only handle GET requests from same origin
+  if (url.origin !== location.origin || event.request.method !== 'GET') {
+    return;
   }
+
+  // Determine strategy based on request type
+  let strategy;
+  
+  if (url.pathname.includes('/api/')) {
+    // API calls - network first
+    strategy = CACHE_STRATEGIES.networkFirst;
+  } else if (
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.jpeg') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.woff2')
+  ) {
+    // Static assets - cache first
+    strategy = CACHE_STRATEGIES.cacheFirst;
+  } else {
+    // HTML and other content - stale while revalidate
+    strategy = CACHE_STRATEGIES.staleWhileRevalidate;
+  }
+
+  event.respondWith(strategy(event.request));
 });

@@ -8,6 +8,7 @@ import { PointageJ2 } from '@/screens/PointageJ2';
 import { Admin } from '@/screens/Admin';
 import { PublicView } from '@/screens/PublicView';
 import { SyncIndicator } from '@/components/SyncIndicator';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { Droplet, LayoutDashboard, UserPlus, ClipboardList, CheckSquare, Settings, LogOut, Globe } from 'lucide-react';
 import type { Role } from '@/lib/supabase';
 
@@ -112,6 +113,9 @@ function MainApp() {
           ))}
         </div>
       </nav>
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
