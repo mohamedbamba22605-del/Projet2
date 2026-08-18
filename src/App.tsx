@@ -112,7 +112,7 @@ function MainApp() {
 
       {/* Bottom nav */}
       <nav className="bg-white border-t border-gray-200 flex-shrink-0 z-10">
-        <div className="max-w-md mx-auto px-2 py-1 flex justify-around">
+        <div className="max-w-md mx-auto px-2 flex justify-around">
           {visibleNav.map((item) => (
             <button
               key={item.id}
