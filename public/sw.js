@@ -1,10 +1,13 @@
-const CACHE_NAME = 'le-match-continue-v2';
+const CACHE_NAME = 'le-match-continue-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+  '/favicon-32.png',
+  '/icon.svg'
 ];
 
 // Cache strategies
@@ -55,7 +58,18 @@ const CACHE_STRATEGIES = {
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      // Cache assets one by one to avoid complete failure if one is missing
+      return Promise.allSettled(
+        STATIC_ASSETS.map(url => {
+          return cache.add(new Request(url, { cache: 'reload' }))
+            .catch(err => {
+              console.log('Failed to cache:', url, err);
+              // Continue even if one asset fails
+            });
+        })
+      );
+    })
   );
   self.skipWaiting();
 });

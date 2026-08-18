@@ -124,18 +124,113 @@ Vous devriez obtenir un score proche de 100%.
 - [ ] Le thème de couleur est appliqué
 - [ ] L'application fonctionne en mode standalone
 
-## 🔒 Configuration HTTPS
+## 🔒 Configuration HTTPS (OBLIGATOIRE pour Android)
 
-Pour un environnement de production, assurez-vous que :
+**IMPORTANT** : L'installation automatique PWA sur Android **NE FONCTIONNE PAS** sans HTTPS. C'est une restriction de sécurité du navigateur Chrome.
 
-1. Votre domaine a un certificat SSL valide
-2. Le service worker est servi depuis le même origine
-3. Les assets sont également servis via HTTPS
+### Pourquoi HTTPS est obligatoire
+- Chrome Android bloque l'installation PWA sur HTTP
+- Le service worker ne fonctionne que sur HTTPS (ou localhost)
+- L'événement `beforeinstallprompt` ne se déclenche pas sans HTTPS
 
-Pour les tests locaux, vous pouvez utiliser :
+### Solutions de déploiement HTTPS
+
+#### Option 1 : Vercel (Recommandé - Gratuit)
 ```bash
-npx local-ssl-server --dist dist
+# Installer Vercel CLI
+npm i -g vercel
+
+# Déployer
+vercel
 ```
+Vercel fournit automatiquement HTTPS avec certificat SSL.
+
+#### Option 2 : Netlify (Gratuit)
+```bash
+# Installer Netlify CLI
+npm i -g netlify-cli
+
+# Construire et déployer
+npm run build
+netlify deploy --prod
+```
+
+#### Option 3 : GitHub Pages (Gratuit)
+1. Push votre code sur GitHub
+2. Activez GitHub Pages dans les settings du repository
+3. HTTPS est automatiquement activé
+
+#### Option 4 : Votre propre serveur
+Utilisez Let's Encrypt pour un certificat SSL gratuit :
+```bash
+# Sur Ubuntu/Debian
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot --nginx
+```
+
+### Tests locaux avec HTTPS
+
+#### Option A : ngrok (Pour tests temporaires)
+```bash
+# Installer ngrok
+# Télécharger depuis https://ngrok.com/
+
+# Lancer votre serveur de développement
+npm run dev
+
+# Dans un autre terminal, créer un tunnel HTTPS
+ngrok http 5173
+```
+
+#### Option B : mkcert (Pour développement local)
+```bash
+# Installer mkcert
+# Windows: choco install mkcert
+# Mac: brew install mkcert nss
+# Linux: voir documentation mkcert
+
+# Créer autorité de certification locale
+mkcert -install
+
+# Générer certificat pour localhost
+mkcert localhost 127.0.0.1 ::1
+
+# Utiliser avec votre serveur de développement
+```
+
+#### Option C : Vite avec HTTPS
+```bash
+# Dans vite.config.ts
+export default defineConfig({
+  server: {
+    https: {
+      key: fs.readFileSync('./localhost-key.pem'),
+      cert: fs.readFileSync('./localhost.pem'),
+    },
+  },
+})
+```
+
+### Vérification HTTPS
+Avant de tester l'installation PWA sur Android :
+1. Ouvrez le site dans Chrome Android
+2. Vérifiez le cadenas 🔒 dans la barre d'adresse
+3. Le site doit être accessible via `https://` et non `http://`
+
+### Dépannage Android
+
+**L'installation ne se propose pas**
+- ✅ Vérifiez que le site est en HTTPS (cadenas visible)
+- ✅ Videz le cache de Chrome Android
+- ✅ Désinstallez toute version précédente de l'application
+- ✅ Essayez en mode navigation privée
+- ✅ Vérifiez que le manifest.json est accessible : `https://votre-domaine.com/manifest.json`
+
+**Icône grise après installation**
+- ✅ Les fichiers PNG doivent être accessibles via HTTPS
+- ✅ Vérifiez les chemins dans manifest.json
+- ✅ Les icônes doivent être au format PNG (pas SVG pour Android)
+- ✅ Redémarrez l'appareil après installation
 
 ## 📝 Structure des fichiers PWA
 
