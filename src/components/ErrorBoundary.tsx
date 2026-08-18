@@ -21,11 +21,6 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('Error Boundary caught an error:', error, errorInfo);
-    
-    // Log additional debug info
-    console.log('User Agent:', navigator.userAgent);
-    console.log('Platform:', navigator.platform);
-    console.log('URL:', window.location.href);
   }
 
   render() {

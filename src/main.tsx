@@ -4,27 +4,12 @@ import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 
-// Add debug logging for iOS
-console.log('App initializing...');
-console.log('User Agent:', navigator.userAgent);
-console.log('Platform:', navigator.platform);
-
-// Check if app is in standalone mode (PWA)
-const isInStandaloneMode = 
-  window.matchMedia('(display-mode: standalone)').matches ||
-  (window.navigator as any).standalone === true;
-
-console.log('Is standalone mode:', isInStandaloneMode);
-
 // Safari iOS compatibility fix - ensure DOM is ready
 const initializeApp = () => {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
-    console.error('Root element not found!');
     return;
   }
-  
-  console.log('Root element found, mounting React...');
   
   try {
     const root = createRoot(rootElement);
@@ -36,10 +21,7 @@ const initializeApp = () => {
         </ErrorBoundary>
       </StrictMode>
     );
-    
-    console.log('React mounted successfully');
   } catch (error) {
-    console.error('Failed to mount React:', error);
     rootElement.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>Application Error</h2><p>Failed to initialize. Please refresh the page.</p></div>';
   }
 };

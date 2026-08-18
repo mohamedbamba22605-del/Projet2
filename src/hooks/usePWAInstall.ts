@@ -80,7 +80,6 @@ export function usePWAInstall() {
       
       return outcome === 'accepted';
     } catch (error) {
-      console.error('Error during PWA installation:', error);
       return false;
     }
   };
