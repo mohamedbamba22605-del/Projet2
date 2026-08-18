@@ -72,7 +72,7 @@ function MainApp() {
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-full bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-white shadow-sm flex-shrink-0 safe-area-top">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -102,7 +102,7 @@ function MainApp() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 py-4">
+      <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
         {screen === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
         {screen === 'saisie' && <SaisieJ1 onSaved={triggerRefresh} />}
         {screen === 'inscription' && <InscriptionContinue />}
