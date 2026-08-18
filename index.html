@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#dc2626" />
     
     <!-- iOS PWA Support -->
@@ -25,10 +25,54 @@
     
     <!-- Prevent automatic link detection on iOS -->
     <meta name="format-detection" content="telephone=no" />
+    
+    <!-- iOS Safari polyfills and fixes -->
+    <script>
+      // Polyfill for forEach on NodeList (Safari < 10)
+      if (window.NodeList && !NodeList.prototype.forEach) {
+        NodeList.prototype.forEach = Array.prototype.forEach;
+      }
+      
+      // Polyfill for closest (Safari < 9)
+      if (!Element.prototype.closest) {
+        Element.prototype.closest = function(s) {
+          var el = this;
+          do {
+            if (el.matches(s)) return el;
+            el = el.parentElement || el.parentNode;
+          } while (el !== null && el.nodeType === 1);
+          return null;
+        };
+      }
+      
+      // Polyfill for matches (Safari < 9)
+      if (!Element.prototype.matches) {
+        Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+      }
+      
+      // Fix for iOS input zoom
+      const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (iOS) {
+        document.addEventListener('focusin', function(e) {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            document.body.style.height = window.innerHeight + 'px';
+          }
+        });
+        document.addEventListener('focusout', function() {
+          document.body.style.height = 'auto';
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Fallback for browsers without module support -->
+    <script nomodule>
+      console.error('Your browser does not support ES modules. Please use a modern browser.');
+      document.getElementById('root').innerHTML = '<div style="padding: 20px; text-align: center;"><h2>Browser not supported</h2><p>Please use a modern browser to access this application.</p></div>';
+    </script>
     <script>
       // TEMPORARILY DISABLED for iOS debugging
       // Register service worker with better error handling for iOS
