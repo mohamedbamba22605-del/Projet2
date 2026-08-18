@@ -9,6 +9,13 @@ console.log('App initializing...');
 console.log('User Agent:', navigator.userAgent);
 console.log('Platform:', navigator.platform);
 
+// Check if app is in standalone mode (PWA)
+const isInStandaloneMode = 
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as any).standalone === true;
+
+console.log('Is standalone mode:', isInStandaloneMode);
+
 // Safari iOS compatibility fix - ensure DOM is ready
 const initializeApp = () => {
   const rootElement = document.getElementById('root');

@@ -9,8 +9,13 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // Check if running on iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(isIOSDevice);
+
     // Check if app is already installed
     const checkInstalled = () => {
       const isInStandaloneMode = 
@@ -21,7 +26,12 @@ export function usePWAInstall() {
 
     checkInstalled();
 
-    // Listen for beforeinstallprompt event
+    // For iOS, installation is always possible via "Add to Home Screen"
+    if (isIOSDevice && !isInStandaloneMode) {
+      setIsInstallable(true);
+    }
+
+    // Listen for beforeinstallprompt event (Chrome/Android only)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       const promptEvent = e as BeforeInstallPromptEvent;
@@ -46,6 +56,13 @@ export function usePWAInstall() {
   }, []);
 
   const promptInstall = async () => {
+    // iOS: Show instructions for "Add to Home Screen"
+    if (isIOS) {
+      // Return true to indicate iOS installation instructions should be shown
+      return 'ios';
+    }
+
+    // Chrome/Android: Use beforeinstallprompt event
     if (!deferredPrompt) {
       return false;
     }
@@ -70,6 +87,7 @@ export function usePWAInstall() {
   return {
     isInstallable,
     isInstalled,
+    isIOS,
     promptInstall
   };
 }
