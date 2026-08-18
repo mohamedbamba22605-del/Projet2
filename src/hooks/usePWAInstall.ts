@@ -22,12 +22,13 @@ export function usePWAInstall() {
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;
       setIsInstalled(isInStandaloneMode);
+      return isInStandaloneMode;
     };
 
-    checkInstalled();
+    const currentStandaloneMode = checkInstalled();
 
     // For iOS, installation is always possible via "Add to Home Screen"
-    if (isIOSDevice && !isInStandaloneMode) {
+    if (isIOSDevice && !currentStandaloneMode) {
       setIsInstallable(true);
     }
 
