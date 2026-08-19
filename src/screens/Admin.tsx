@@ -407,28 +407,79 @@ function ExportTab() {
 }
 
 function ResetTab() {
+  const [mode, setMode] = useState<'full' | 'selective'>('full');
   const [confirming, setConfirming] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  
+  // Options de réinitialisation sélective
+  const [selectedOptions, setSelectedOptions] = useState({
+    recruteurs: false,
+    promesses: false,
+    staff: false,
+    spontanes: false,
+    utilisateurs: false,
+    bonus: false,
+  });
 
   const handleReset = async () => {
     setResetting(true);
     setError('');
-    const { data, error: err } = await supabase.rpc('reset_database');
-    setResetting(false);
-    if (err) {
-      setError(err.message);
-      setConfirming(false);
-      return;
-    }
-    if (data) {
-      clearQueue();
-      setDone(true);
+    
+    try {
+      if (mode === 'full') {
+        const { data, error: err } = await supabase.rpc('reset_database');
+        if (err) throw err;
+        if (data) {
+          clearQueue();
+          setDone(true);
+        }
+      } else {
+        // Réinitialisation sélective
+        const operations = [];
+        
+        if (selectedOptions.recruteurs) {
+          operations.push(supabase.from('participants').delete().neq('id', '00000000-0000-0000-0000-000000000000'));
+        }
+        if (selectedOptions.promesses) {
+          operations.push(supabase.from('promesses').delete().neq('id', '00000000-0000-0000-0000-000000000000'));
+        }
+        if (selectedOptions.staff) {
+          operations.push(supabase.from('inscriptions_staff').delete().neq('id', '00000000-0000-0000-0000-000000000000'));
+        }
+        if (selectedOptions.spontanes) {
+          operations.push(supabase.from('donneurs_spontanes').delete().neq('id', '00000000-0000-0000-0000-000000000000'));
+        }
+        if (selectedOptions.utilisateurs) {
+          operations.push(supabase.from('utilisateurs').delete().neq('role', 'organisateur'));
+        }
+        if (selectedOptions.bonus) {
+          operations.push(supabase.from('match_config').update({ score_bonus_garcons: 0, score_bonus_filles: 0 }).eq('id', 1));
+        }
+        
+        if (operations.length > 0) {
+          await Promise.all(operations);
+          clearQueue();
+          setDone(true);
+        } else {
+          setError('Veuillez sélectionner au moins une option');
+          setResetting(false);
+          return;
+        }
+      }
+      
+      setResetting(false);
       setConfirming(false);
       setTimeout(() => setDone(false), 4000);
+    } catch (err: any) {
+      setError(err.message);
+      setResetting(false);
+      setConfirming(false);
     }
   };
+
+  const hasSelection = Object.values(selectedOptions).some(v => v);
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-5 space-y-4">
@@ -447,34 +498,145 @@ function ResetTab() {
       {done && (
         <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg">
           <Check className="w-4 h-4" />
-          Base de données réinitialisée avec succès
+          {mode === 'full' ? 'Base de données réinitialisée avec succès' : 'Données sélectionnées réinitialisées avec succès'}
         </div>
       )}
 
-      <p className="text-sm text-gray-600">
-        Cette action efface toutes les données de l'événement: recruteurs, promesses, inscriptions staff, donneurs spontanés et utilisateurs non-organisateurs.
-      </p>
-
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-        <p className="text-sm font-medium text-red-700">Données qui seront supprimées:</p>
-        <ul className="text-sm text-red-600 space-y-1 pl-4 list-disc">
-          <li>Tous les recruteurs et leurs promesses</li>
-          <li>Toutes les inscriptions Staff</li>
-          <li>Tous les donneurs spontanés</li>
-          <li>Tous les comptes Mobilisateur et Staff</li>
-        </ul>
-        <p className="text-sm text-green-600 font-medium mt-2">
-          Les comptes Organisateurs et le bonus match sont conservés (remis à 0).
-        </p>
+      {/* Sélection du mode */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode('full')}
+          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${
+            mode === 'full' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'
+          }`}
+        >
+          Réinitialisation complète
+        </button>
+        <button
+          onClick={() => setMode('selective')}
+          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${
+            mode === 'selective' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'
+          }`}
+        >
+          Réinitialisation sélective
+        </button>
       </div>
+
+      {mode === 'full' ? (
+        <>
+          <p className="text-sm text-gray-600">
+            Cette action efface toutes les données de l'événement: recruteurs, promesses, inscriptions staff, donneurs spontanés et utilisateurs non-organisateurs.
+          </p>
+
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
+            <p className="text-sm font-medium text-red-700">Données qui seront supprimées:</p>
+            <ul className="text-sm text-red-600 space-y-1 pl-4 list-disc">
+              <li>Tous les recruteurs et leurs promesses</li>
+              <li>Toutes les inscriptions Staff</li>
+              <li>Tous les donneurs spontanés</li>
+              <li>Tous les comptes Mobilisateur et Staff</li>
+            </ul>
+            <p className="text-sm text-green-600 font-medium mt-2">
+              Les comptes Organisateurs et le bonus match sont conservés (remis à 0).
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-gray-600">
+            Sélectionnez les données spécifiques que vous souhaitez réinitialiser:
+          </p>
+
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.recruteurs}
+                onChange={(e) => setSelectedOptions({...selectedOptions, recruteurs: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Recruteurs</p>
+                <p className="text-xs text-gray-500">Supprime tous les recruteurs et leurs données</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.promesses}
+                onChange={(e) => setSelectedOptions({...selectedOptions, promesses: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Promesses</p>
+                <p className="text-xs text-gray-500">Supprime toutes les promesses de don</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.staff}
+                onChange={(e) => setSelectedOptions({...selectedOptions, staff: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Inscriptions Staff</p>
+                <p className="text-xs text-gray-500">Supprime toutes les inscriptions du staff</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.spontanes}
+                onChange={(e) => setSelectedOptions({...selectedOptions, spontanes: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Donneurs spontanés</p>
+                <p className="text-xs text-gray-500">Supprime tous les donneurs spontanés</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.utilisateurs}
+                onChange={(e) => setSelectedOptions({...selectedOptions, utilisateurs: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Utilisateurs (Mobilisateur/Staff)</p>
+                <p className="text-xs text-gray-500">Supprime les comptes sauf organisateurs</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedOptions.bonus}
+                onChange={(e) => setSelectedOptions({...selectedOptions, bonus: e.target.checked})}
+                className="w-5 h-5 text-red-600 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Bonus match</p>
+                <p className="text-xs text-gray-500">Remet les bonus garçons et filles à 0</p>
+              </div>
+            </label>
+          </div>
+        </>
+      )}
 
       {!confirming ? (
         <button
           onClick={() => setConfirming(true)}
-          className="w-full py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+          disabled={mode === 'selective' && !hasSelection}
+          className="w-full py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
           <RotateCcw className="w-5 h-5" />
-          Réinitialiser la base
+          {mode === 'full' ? 'Réinitialiser la base' : 'Réinitialiser la sélection'}
         </button>
       ) : (
         <div className="space-y-3">
