@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, MatchConfig } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { clearQueue } from '@/lib/offline';
-import { Settings, Users, Download, UserPlus, Trash2, CircleAlert as AlertCircle, Check, RotateCcw } from 'lucide-react';
+import { Settings, Users, Download, UserPlus, Trash2, CircleAlert as AlertCircle, Check, RotateCcw, UserCheck } from 'lucide-react';
 
-type Tab = 'bonus' | 'users' | 'export' | 'reset';
+type Tab = 'bonus' | 'users' | 'staff_inscriptions' | 'export' | 'reset';
 
 export function Admin() {
   const [tab, setTab] = useState<Tab>('bonus');
@@ -18,6 +18,9 @@ export function Admin() {
         <TabButton active={tab === 'users'} onClick={() => setTab('users')} icon={<Users className="w-4 h-4" />}>
           Utilisateurs
         </TabButton>
+        <TabButton active={tab === 'staff_inscriptions'} onClick={() => setTab('staff_inscriptions')} icon={<Users className="w-4 h-4" />}>
+          Inscriptions Staff
+        </TabButton>
         <TabButton active={tab === 'export'} onClick={() => setTab('export')} icon={<Download className="w-4 h-4" />}>
           Export CSV
         </TabButton>
@@ -28,6 +31,7 @@ export function Admin() {
 
       {tab === 'bonus' && <BonusTab />}
       {tab === 'users' && <UsersTab />}
+      {tab === 'staff_inscriptions' && <StaffInscriptionsTab />}
       {tab === 'export' && <ExportTab />}
       {tab === 'reset' && <ResetTab />}
     </div>
@@ -402,6 +406,228 @@ function ExportTab() {
           </>
         )}
       </button>
+    </div>
+  );
+}
+
+function StaffInscriptionsTab() {
+  const [staffMembers, setStaffMembers] = useState<Array<{ id: string; prenom: string; role: string; inscriptions_count: number }>>([]);
+  const [selectedStaff, setSelectedStaff] = useState<string | null>(null);
+  const [inscriptions, setInscriptions] = useState<Array<{ id: string; nom: string; telephone: string; statut: string; timestamp_enregistrement: string; timestamp_pointage: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchStaffMembers();
+  }, []);
+
+  const fetchStaffMembers = async () => {
+    setLoading(true);
+    setError('');
+    const { data, error: err } = await supabase
+      .from('utilisateurs')
+      .select('id, prenom, role')
+      .in('role', ['mobilisateur', 'staff'])
+      .order('prenom', { ascending: true });
+    
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+      return;
+    }
+
+    // Get inscription count for each staff member
+    const staffWithCounts = await Promise.all(
+      (data || []).map(async (staff) => {
+        const { count } = await supabase
+          .from('inscriptions_staff')
+          .select('*', { count: 'exact', head: true })
+          .eq('staff_utilisateur_id', staff.id);
+        return {
+          ...staff,
+          inscriptions_count: count || 0
+        };
+      })
+    );
+
+    setStaffMembers(staffWithCounts);
+    setLoading(false);
+  };
+
+  const fetchStaffInscriptions = async (staffId: string) => {
+    setLoading(true);
+    setError('');
+    const { data, error: err } = await supabase
+      .from('inscriptions_staff')
+      .select('*')
+      .eq('staff_utilisateur_id', staffId)
+      .order('timestamp_enregistrement', { ascending: false });
+    
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+      return;
+    }
+    
+    setInscriptions(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchStaffMembers();
+  }, []);
+
+  const handleStaffClick = (staffId: string) => {
+    setSelectedStaff(staffId);
+    fetchStaffInscriptions(staffId);
+  };
+
+  const handleBack = () => {
+    setSelectedStaff(null);
+    setInscriptions([]);
+  };
+
+  if (loading && !selectedStaff) {
+    return (
+      <div className="bg-white rounded-2xl shadow-md p-5">
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedStaff) {
+    const selectedStaffMember = staffMembers.find(s => s.id === selectedStaff);
+    
+    return (
+      <div className="bg-white rounded-2xl shadow-md p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            ← Retour
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-red-600" />
+            Inscriptions de {selectedStaffMember?.prenom}
+          </h2>
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Total: {inscriptions.length} inscription(s)
+          </p>
+          <div className="flex gap-4 text-sm">
+            <span className="text-green-600">
+              Présentes: {inscriptions.filter(i => i.statut === 'presente').length}
+            </span>
+            <span className="text-gray-500">
+              En attente: {inscriptions.filter(i => i.statut === 'en_attente').length}
+            </span>
+          </div>
+        </div>
+
+        {inscriptions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Aucune inscription pour ce membre du staff
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {inscriptions.map((ins) => (
+              <div key={ins.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div>
+                  <span className="font-medium text-gray-800">{ins.nom}</span>
+                  <span className="text-sm text-gray-500 ml-2">{ins.telephone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {ins.statut === 'presente' ? (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Présent</span>
+                  ) : (
+                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">En attente</span>
+                  )}
+                  {ins.timestamp_pointage && (
+                    <span className="text-xs text-gray-400">
+                      {new Date(ins.timestamp_pointage).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-md p-5 space-y-4">
+      <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <UserCheck className="w-5 h-5 text-red-600" />
+        Inscriptions par membre du staff
+      </h2>
+
+      {error && (
+        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+          <AlertCircle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
+
+      <p className="text-sm text-gray-600">
+        Cliquez sur un membre du staff pour voir ses inscriptions
+      </p>
+
+      {staffMembers.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          Aucun membre du staff inscrit
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {staffMembers.map((staff) => (
+            <button
+              key={staff.id}
+              onClick={() => handleStaffClick(staff.id)}
+              className="w-full flex items-center justify-between bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <UserCheck className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{staff.prenom}</p>
+                  <p className="text-xs text-gray-500 capitalize">{staff.role}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700">
+                  {staff.inscriptions_count}
+                </span>
+                <span className="text-xs text-gray-500">inscription(s)</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-600">Total des membres staff:</span>
+          <span className="font-semibold text-gray-900">{staffMembers.length}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm mt-1">
+          <span className="text-gray-600">Total des inscriptions:</span>
+          <span className="font-semibold text-gray-900">{staffMembers.reduce((sum, s) => sum + s.inscriptions_count, 0)}</span>
+        </div>
+      </div>
     </div>
   );
 }
