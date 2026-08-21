@@ -123,17 +123,17 @@ function MainApp() {
 
       {/* Bottom nav */}
       <nav className="bg-white border-t border-gray-200 flex-shrink-0 z-10">
-        <div className="max-w-md mx-auto px-2 py-1.5 flex justify-around">
+        <div className="max-w-md mx-auto px-2 py-1 flex overflow-x-auto justify-around">
           {visibleNav.map((item) => (
             <button
               key={item.id}
               onClick={() => setScreen(item.id)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors flex-shrink-0 ${
                 screen === item.id ? 'text-red-600 bg-red-50' : 'text-gray-400'
               }`}
             >
               {item.icon}
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
             </button>
           ))}
         </div>
