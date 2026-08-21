@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, normalizePhone, InscriptionMatch } from '@/lib/supabase';
+import { supabase, normalizePhone, type InscriptionMatch } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus, Phone, AlertCircle, Check, Trophy, Users } from 'lucide-react';
 

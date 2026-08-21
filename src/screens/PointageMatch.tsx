@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase, normalizePhone, PaiementMatchResult } from '@/lib/supabase';
+import { supabase, normalizePhone, type PaiementMatchResult } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Search, Check, AlertCircle, DollarSign, Trophy, User } from 'lucide-react';
 
