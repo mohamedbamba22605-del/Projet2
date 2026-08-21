@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase, MatchConfig } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { clearQueue } from '@/lib/offline';
-import { Settings, Users, Download, UserPlus, Trash2, CircleAlert as AlertCircle, Check, RotateCcw, UserCheck } from 'lucide-react';
+import { Settings, Users, Download, UserPlus, Trash2, CircleAlert as AlertCircle, Check, RotateCcw, UserCheck, Shield, UserPlus2 } from 'lucide-react';
 
-type Tab = 'bonus' | 'users' | 'staff_inscriptions' | 'export' | 'reset';
+type Tab = 'bonus' | 'users' | 'roles' | 'staff_inscriptions' | 'export' | 'reset';
 
 export function Admin() {
   const [tab, setTab] = useState<Tab>('bonus');
@@ -17,6 +17,9 @@ export function Admin() {
         </TabButton>
         <TabButton active={tab === 'users'} onClick={() => setTab('users')} icon={<Users className="w-4 h-4" />}>
           Utilisateurs
+        </TabButton>
+        <TabButton active={tab === 'roles'} onClick={() => setTab('roles')} icon={<Shield className="w-4 h-4" />}>
+          Rôles Match
         </TabButton>
         <TabButton active={tab === 'staff_inscriptions'} onClick={() => setTab('staff_inscriptions')} icon={<Users className="w-4 h-4" />}>
           Inscriptions Staff
@@ -31,6 +34,7 @@ export function Admin() {
 
       {tab === 'bonus' && <BonusTab />}
       {tab === 'users' && <UsersTab />}
+      {tab === 'roles' && <RolesTab />}
       {tab === 'staff_inscriptions' && <StaffInscriptionsTab />}
       {tab === 'export' && <ExportTab />}
       {tab === 'reset' && <ResetTab />}
@@ -406,6 +410,185 @@ function ExportTab() {
           </>
         )}
       </button>
+    </div>
+  );
+}
+
+function RolesTab() {
+  const [users, setUsers] = useState<Array<{ id: string; prenom: string; role: string; roles_supp: Array<{ role: string; id: string }> }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError('');
+    const { data, error: err } = await supabase.rpc('obtenir_utilisateurs_avec_roles_supp');
+    
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+      return;
+    }
+    
+    if (data) {
+      setUsers(data.utilisateurs || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const assignRole = async (userId: string, role: 'treasurer' | 'controller') => {
+    setError('');
+    const { data, error: err } = await supabase.rpc('attribuer_role_supp', {
+      p_utilisateur_id: userId,
+      p_role_supp: role
+    });
+    
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    
+    if (data?.success) {
+      setSuccess(`Rôle ${role === 'treasurer' ? 'Trésorier' : 'Contrôleur'} attribué avec succès`);
+      setTimeout(() => setSuccess(''), 2000);
+      fetchUsers();
+    } else {
+      setError(data?.error || 'Erreur lors de l\'attribution du rôle');
+    }
+  };
+
+  const removeRole = async (userId: string, role: 'treasurer' | 'controller') => {
+    setError('');
+    const { error: err } = await supabase.rpc('supprimer_role_supp', {
+      p_utilisateur_id: userId,
+      p_role_supp: role
+    });
+    
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    
+    setSuccess(`Rôle ${role === 'treasurer' ? 'Trésorier' : 'Contrôleur'} supprimé avec succès`);
+    setTimeout(() => setSuccess(''), 2000);
+    fetchUsers();
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl shadow-md p-5">
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-md p-5 space-y-4">
+      <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <Shield className="w-5 h-5 text-red-600" />
+        Gestion des rôles Match
+      </h2>
+
+      {error && (
+        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+          <AlertCircle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg">
+          <Check className="w-4 h-4" />
+          {success}
+        </div>
+      )}
+
+      <p className="text-sm text-gray-600">
+        Attribuez des rôles supplémentaires pour l'activité du match (Trésorier, Contrôleur)
+      </p>
+
+      <div className="space-y-3">
+        {users.map((user) => (
+          <div key={user.id} className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-medium text-gray-900">{user.prenom}</p>
+                <p className="text-xs text-gray-500 capitalize">Rôle principal: {user.role}</p>
+              </div>
+              <div className="flex gap-2">
+                {user.roles_supp.find(r => r.role === 'treasurer') ? (
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    Trésorier
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => assignRole(user.id, 'treasurer')}
+                    className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full hover:bg-yellow-100 transition-colors flex items-center gap-1"
+                  >
+                    <UserPlus2 className="w-3 h-3" />
+                    Trésorier
+                  </button>
+                )}
+                {user.roles_supp.find(r => r.role === 'controller') ? (
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    Contrôleur
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => assignRole(user.id, 'controller')}
+                    className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full hover:bg-purple-100 transition-colors flex items-center gap-1"
+                  >
+                    <UserPlus2 className="w-3 h-3" />
+                    Contrôleur
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {user.roles_supp.find(r => r.role === 'treasurer') && (
+                <button
+                  onClick={() => removeRole(user.id, 'treasurer')}
+                  className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Retirer Trésorier
+                </button>
+              )}
+              {user.roles_supp.find(r => r.role === 'controller') && (
+                <button
+                  onClick={() => removeRole(user.id, 'controller')}
+                  className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Retirer Contrôleur
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="pt-4 border-t border-gray-100 text-sm text-gray-600">
+        <p className="font-medium mb-2">Légende des rôles :</p>
+        <ul className="space-y-1">
+          <li className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+            <span><strong>Trésorier</strong> : Peut inscrire les joueurs pour le match et valider les paiements</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+            <span><strong>Contrôleur</strong> : Peut valider les paiements le jour du match</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

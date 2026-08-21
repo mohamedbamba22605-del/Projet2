@@ -8,6 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export type Role = 'organisateur' | 'mobilisateur' | 'staff';
+export type RoleSupplementaire = 'treasurer' | 'controller';
 
 export interface Utilisateur {
   id: string;
@@ -95,6 +96,50 @@ export interface PointageResult {
   nom: string;
   equipe?: string;
   recruteur?: string;
+}
+
+// Match Activity Interfaces
+export interface RoleSupplementaire {
+  id: string;
+  utilisateur_id: string;
+  role_supp: RoleSupplementaire;
+  created_at: string;
+}
+
+export interface InscriptionMatch {
+  id: string;
+  nom: string;
+  telephone: string;
+  equipe: 'garcons' | 'filles';
+  role_joueur: 'joueur' | 'spectateur';
+  statut_paiement: 'non_paye' | 'paye';
+  inscrit_par_utilisateur_id: string | null;
+  inscrit_par_role_supp: string | null;
+  timestamp_inscription: string;
+  timestamp_paiement: string | null;
+  paiement_valide_par_utilisateur_id: string | null;
+  paiement_valide_par_role_supp: string | null;
+}
+
+export interface MatchStats {
+  total_garcons: number;
+  total_filles: number;
+  payes_garcons: number;
+  payes_filles: number;
+  non_payes_garcons: number;
+  non_payes_filles: number;
+  total_inscrits: number;
+  total_payes: number;
+  total_non_payes: number;
+}
+
+export interface PaiementMatchResult {
+  success: boolean;
+  status?: 'paye';
+  nom?: string;
+  equipe?: string;
+  error?: string;
+  already_paid?: boolean;
 }
 
 export function normalizePhone(phone: string): string {

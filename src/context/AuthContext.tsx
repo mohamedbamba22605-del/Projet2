@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, Utilisateur } from '@/lib/supabase';
+import { supabase, Utilisateur, RoleSupplementaire } from '@/lib/supabase';
 
 interface AuthContextValue {
   user: Utilisateur | null;
+  rolesSupplementaires: RoleSupplementaire[];
   loading: boolean;
   login: (pin: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  hasRoleSupplementaire: (role: RoleSupplementaire) => boolean;
+  isTreasury: boolean;
+  isController: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,6 +44,7 @@ const safeStorage = {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Utilisateur | null>(null);
+  const [rolesSupplementaires, setRolesSupplementaires] = useState<RoleSupplementaire[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -90,6 +95,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else if (data) {
           console.log('AuthContext: Session validated');
           setUser(parsed);
+          // Fetch supplementary roles
+          supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData }) => {
+            if (rolesData) {
+              const roles = rolesData.roles || [];
+              setRolesSupplementaires(roles);
+            }
+          });
         } else {
           console.log('AuthContext: Session no longer valid');
           safeStorage.removeItem(STORAGE_KEY);
@@ -102,6 +114,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeoutId);
         // On network error, use stored session for offline capability
         setUser(parsed);
+        // Try to fetch supplementary roles even on network error
+        if (parsed) {
+          supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData }) => {
+            if (rolesData) {
+              const roles = rolesData.roles || [];
+              setRolesSupplementaires(roles);
+            }
+          });
+        }
         setLoading(false);
       });
     return () => {
@@ -119,16 +140,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u: Utilisateur = { id: data[0].v_id, prenom: data[0].v_prenom, role: data[0].v_role };
     setUser(u);
     safeStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    
+    // Fetch supplementary roles
+    const { data: rolesData } = await supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: u.id });
+    if (rolesData) {
+      const roles = rolesData.roles || [];
+      setRolesSupplementaires(roles);
+    }
+    
     return { success: true };
   };
 
   const logout = () => {
     setUser(null);
+    setRolesSupplementaires([]);
     safeStorage.removeItem(STORAGE_KEY);
   };
 
+  const hasRoleSupplementaire = (role: RoleSupplementaire): boolean => {
+    return rolesSupplementaires.some(r => r.role_supp === role);
+  };
+
+  const isTreasury = hasRoleSupplementaire('treasurer');
+  const isController = hasRoleSupplementaire('controller');
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, rolesSupplementaires, loading, login, logout, hasRoleSupplementaire, isTreasury, isController }}>
       {children}
     </AuthContext.Provider>
   );

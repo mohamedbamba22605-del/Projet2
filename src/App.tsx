@@ -7,12 +7,14 @@ import { InscriptionContinue } from '@/screens/InscriptionContinue';
 import { PointageJ2 } from '@/screens/PointageJ2';
 import { Admin } from '@/screens/Admin';
 import { PublicView } from '@/screens/PublicView';
+import { InscriptionMatch } from '@/screens/InscriptionMatch';
+import { PointageMatch } from '@/screens/PointageMatch';
 import { SyncIndicator } from '@/components/SyncIndicator';
 import { InstallPrompt } from '@/components/InstallPrompt';
-import { Droplet, LayoutDashboard, UserPlus, ClipboardList, CheckSquare, Settings, LogOut, Globe } from 'lucide-react';
+import { Droplet, LayoutDashboard, UserPlus, ClipboardList, CheckSquare, Settings, LogOut, Globe, DollarSign, Trophy } from 'lucide-react';
 import type { Role } from '@/lib/supabase';
 
-type Screen = 'dashboard' | 'saisie' | 'inscription' | 'pointage' | 'admin' | 'public';
+type Screen = 'dashboard' | 'saisie' | 'inscription' | 'pointage' | 'inscription_match' | 'pointage_match' | 'admin' | 'public';
 
 interface NavItem {
   id: Screen;
@@ -26,11 +28,13 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'saisie', label: 'Saisie J1', icon: <UserPlus className="w-5 h-5" />, roles: ['organisateur', 'mobilisateur'] },
   { id: 'inscription', label: 'Inscription', icon: <ClipboardList className="w-5 h-5" />, roles: ['organisateur', 'staff'] },
   { id: 'pointage', label: 'Pointage J2', icon: <CheckSquare className="w-5 h-5" />, roles: ['organisateur', 'mobilisateur', 'staff'] },
+  { id: 'inscription_match', label: 'Inscription Match', icon: <Trophy className="w-5 h-5" />, roles: ['organisateur', 'treasurer'] },
+  { id: 'pointage_match', label: 'Pointage Match', icon: <DollarSign className="w-5 h-5" />, roles: ['organisateur', 'treasurer', 'controller'] },
   { id: 'admin', label: 'Administration', icon: <Settings className="w-5 h-5" />, roles: ['organisateur'] },
 ];
 
 function MainApp() {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, isTreasury, isController } = useAuth();
   const [screen, setScreen] = useState<Screen>('dashboard');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -68,7 +72,12 @@ function MainApp() {
     return <LoginScreen />;
   }
 
-  const visibleNav = NAV_ITEMS.filter((n) => n.roles.includes(user.role));
+  const visibleNav = NAV_ITEMS.filter((n) => {
+    if (n.roles.includes(user.role)) return true;
+    if (n.roles.includes('treasurer') && isTreasury) return true;
+    if (n.roles.includes('controller') && isController) return true;
+    return false;
+  });
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
@@ -107,6 +116,8 @@ function MainApp() {
         {screen === 'saisie' && <SaisieJ1 onSaved={triggerRefresh} />}
         {screen === 'inscription' && <InscriptionContinue />}
         {screen === 'pointage' && <PointageJ2 onPointed={triggerRefresh} />}
+        {screen === 'inscription_match' && <InscriptionMatch />}
+        {screen === 'pointage_match' && <PointageMatch />}
         {screen === 'admin' && <Admin />}
       </main>
 

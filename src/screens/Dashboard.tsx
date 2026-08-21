@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, DashboardStats } from '@/lib/supabase';
-import { Droplet, Users, Trophy, TrendingUp } from 'lucide-react';
+import { supabase, DashboardStats, MatchStats } from '@/lib/supabase';
+import { Droplet, Users, Trophy, TrendingUp, DollarSign } from 'lucide-react';
 
 interface Props {
   refreshKey?: number;
@@ -8,11 +8,16 @@ interface Props {
 
 export function Dashboard({ refreshKey = 0 }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_dashboard_stats');
     if (!error && data) setStats(data);
+    
+    const { data: matchData, error: matchError } = await supabase.rpc('obtenir_stats_match');
+    if (!matchError && matchData) setMatchStats(matchData);
+    
     setLoading(false);
   }, []);
 
@@ -123,6 +128,51 @@ export function Dashboard({ refreshKey = 0 }: Props) {
           <div className="text-xs text-gray-500">Inscriptions Staff</div>
         </div>
       </div>
+
+      {/* Match Activity Stats */}
+      {matchStats && (
+        <div className="bg-white rounded-2xl shadow-md p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <DollarSign className="w-5 h-5 text-red-600" />
+            <h2 className="text-lg font-bold text-gray-900">Activité Match</h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Boys */}
+            <div className="rounded-xl p-4 text-center bg-blue-50">
+              <div className="text-2xl font-bold text-blue-600">{matchStats.total_garcons}</div>
+              <div className="text-sm text-gray-600 mt-1">Inscrits Garçons</div>
+              <div className="text-xs text-gray-400 mt-2 space-y-0.5">
+                <div className="text-green-600">Payés: {matchStats.payes_garcons}</div>
+                <div className="text-orange-600">Non payés: {matchStats.non_payes_garcons}</div>
+              </div>
+            </div>
+
+            {/* Girls */}
+            <div className="rounded-xl p-4 text-center bg-pink-50">
+              <div className="text-2xl font-bold text-pink-600">{matchStats.total_filles}</div>
+              <div className="text-sm text-gray-600 mt-1">Inscrites Filles</div>
+              <div className="text-xs text-gray-400 mt-2 space-y-0.5">
+                <div className="text-green-600">Payées: {matchStats.payes_filles}</div>
+                <div className="text-orange-600">Non payées: {matchStats.non_payes_filles}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+            <span className="text-gray-600">Total inscrits:</span>
+            <span className="font-semibold text-gray-900">{matchStats.total_inscrits}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Total payés:</span>
+            <span className="font-semibold text-green-600">{matchStats.total_payes}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Total non payés:</span>
+            <span className="font-semibold text-orange-600">{matchStats.total_non_payes}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
