@@ -96,9 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('AuthContext: Session validated');
           setUser(parsed);
           // Fetch supplementary roles
-          supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData }) => {
+          supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData, error: rolesError }) => {
+            if (rolesError) {
+              console.error('Erreur lors de la récupération des rôles (session):', rolesError);
+            }
             if (rolesData) {
               const roles = rolesData.roles || [];
+              console.log('Rôles supplémentaires (session):', roles);
               setRolesSupplementaires(roles);
             }
           });
@@ -142,10 +146,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safeStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     
     // Fetch supplementary roles
-    const { data: rolesData } = await supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: u.id });
+    const { data: rolesData, error: rolesError } = await supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: u.id });
+    if (rolesError) {
+      console.error('Erreur lors de la récupération des rôles supplémentaires:', rolesError);
+    }
     if (rolesData) {
       const roles = rolesData.roles || [];
+      console.log('Rôles supplémentaires récupérés:', roles);
       setRolesSupplementaires(roles);
+    } else {
+      console.log('Aucun rôle supplémentaire trouvé');
     }
     
     return { success: true };

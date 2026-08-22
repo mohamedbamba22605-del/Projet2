@@ -73,11 +73,13 @@ function MainApp() {
   }
 
   const visibleNav = NAV_ITEMS.filter((n) => {
+    console.log('Checking nav item:', n.id, 'User role:', user.role, 'isTreasury:', isTreasury, 'isController:', isController);
     if (n.roles.includes(user.role)) return true;
     if (n.roles.includes('treasurer') && isTreasury) return true;
     if (n.roles.includes('controller') && isController) return true;
     return false;
   });
+  console.log('Visible nav items:', visibleNav.map(n => n.id));
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
