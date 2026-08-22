@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, Utilisateur, RoleSupplementaire } from '@/lib/supabase';
+import { supabase, Utilisateur, type RoleSupplementaire } from '@/lib/supabase';
 
 interface AuthContextValue {
   user: Utilisateur | null;
@@ -96,16 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('AuthContext: Session validated');
           setUser(parsed);
           // Fetch supplementary roles
-          supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData, error: rolesError }) => {
-            if (rolesError) {
-              console.error('Erreur lors de la récupération des rôles (session):', rolesError);
-            }
-            if (rolesData) {
-              const roles = rolesData.roles || [];
-              console.log('Rôles supplémentaires (session):', roles);
-              setRolesSupplementaires(roles);
-            }
-          });
+          if (parsed) {
+            supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData, error: rolesError }) => {
+              if (rolesError) {
+                console.error('Erreur lors de la récupération des rôles (session):', rolesError);
+              }
+              if (rolesData) {
+                const roles = rolesData.roles || [];
+                setRolesSupplementaires(roles);
+              }
+            }).catch((err: Error) => {
+              console.error('Erreur promise rôles (session):', err);
+            });
+          }
         } else {
           console.log('AuthContext: Session no longer valid');
           safeStorage.removeItem(STORAGE_KEY);
@@ -152,10 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (rolesData) {
       const roles = rolesData.roles || [];
-      console.log('Rôles supplémentaires récupérés:', roles);
       setRolesSupplementaires(roles);
-    } else {
-      console.log('Aucun rôle supplémentaire trouvé');
     }
     
     return { success: true };
@@ -168,7 +168,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasRoleSupplementaire = (role: RoleSupplementaire): boolean => {
-    return rolesSupplementaires.some(r => r.role_supp === role);
+    return rolesSupplementaires.some(r => {
+      if (typeof r === 'string') return r === role;
+      if (r && typeof r === 'object' && 'role_supp' in r) return r.role_supp === role;
+      return false;
+    });
   };
 
   const isTreasury = hasRoleSupplementaire('treasurer');

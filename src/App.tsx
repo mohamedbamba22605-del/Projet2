@@ -12,7 +12,7 @@ import { PointageMatch } from '@/screens/PointageMatch';
 import { SyncIndicator } from '@/components/SyncIndicator';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { Droplet, LayoutDashboard, UserPlus, ClipboardList, CheckSquare, Settings, LogOut, Globe, DollarSign, Trophy } from 'lucide-react';
-import type { Role } from '@/lib/supabase';
+import type { Role, RoleSupplementaire } from '@/lib/supabase';
 
 type Screen = 'dashboard' | 'saisie' | 'inscription' | 'pointage' | 'inscription_match' | 'pointage_match' | 'admin' | 'public';
 
@@ -21,6 +21,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   roles: Role[];
+  supplementaryRoles?: RoleSupplementaire[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -28,8 +29,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'saisie', label: 'Saisie J1', icon: <UserPlus className="w-5 h-5" />, roles: ['organisateur', 'mobilisateur'] },
   { id: 'inscription', label: 'Inscription', icon: <ClipboardList className="w-5 h-5" />, roles: ['organisateur', 'staff'] },
   { id: 'pointage', label: 'Pointage J2', icon: <CheckSquare className="w-5 h-5" />, roles: ['organisateur', 'mobilisateur', 'staff'] },
-  { id: 'inscription_match', label: 'Inscription Match', icon: <Trophy className="w-5 h-5" />, roles: ['organisateur', 'treasurer'] },
-  { id: 'pointage_match', label: 'Pointage Match', icon: <DollarSign className="w-5 h-5" />, roles: ['organisateur', 'treasurer', 'controller'] },
+  { id: 'inscription_match', label: 'Inscription Match', icon: <Trophy className="w-5 h-5" />, roles: ['organisateur'], supplementaryRoles: ['treasurer'] },
+  { id: 'pointage_match', label: 'Pointage Match', icon: <DollarSign className="w-5 h-5" />, roles: ['organisateur'], supplementaryRoles: ['treasurer', 'controller'] },
   { id: 'admin', label: 'Administration', icon: <Settings className="w-5 h-5" />, roles: ['organisateur'] },
 ];
 
@@ -73,13 +74,13 @@ function MainApp() {
   }
 
   const visibleNav = NAV_ITEMS.filter((n) => {
-    console.log('Checking nav item:', n.id, 'User role:', user.role, 'isTreasury:', isTreasury, 'isController:', isController);
     if (n.roles.includes(user.role)) return true;
-    if (n.roles.includes('treasurer') && isTreasury) return true;
-    if (n.roles.includes('controller') && isController) return true;
+    if (n.supplementaryRoles) {
+      if (n.supplementaryRoles.includes('treasurer') && isTreasury) return true;
+      if (n.supplementaryRoles.includes('controller') && isController) return true;
+    }
     return false;
   });
-  console.log('Visible nav items:', visibleNav.map(n => n.id));
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
