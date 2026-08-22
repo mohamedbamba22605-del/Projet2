@@ -77,14 +77,25 @@ DROP FUNCTION IF EXISTS attribuer_role_supp(uuid, text);
 CREATE OR REPLACE FUNCTION attribuer_role_supp(p_utilisateur_id uuid, p_role_supp text)
 RETURNS jsonb AS $$
 DECLARE
-  v_result jsonb;
+  v_id uuid;
+  v_utilisateur_id uuid;
+  v_role_supp text;
+  v_created_at timestamptz;
 BEGIN
   INSERT INTO roles_supplementaires (utilisateur_id, role_supp)
   VALUES (p_utilisateur_id, p_role_supp)
   RETURNING id, utilisateur_id, role_supp, created_at
-  INTO v_result;
+  INTO v_id, v_utilisateur_id, v_role_supp, v_created_at;
   
-  RETURN jsonb_build_object('success', true, 'data', v_result);
+  RETURN jsonb_build_object(
+    'success', true, 
+    'data', jsonb_build_object(
+      'id', v_id,
+      'utilisateur_id', v_utilisateur_id,
+      'role_supp', v_role_supp,
+      'created_at', v_created_at
+    )
+  );
 EXCEPTION
   WHEN unique_violation THEN
     RETURN jsonb_build_object('success', false, 'error', 'Cet utilisateur a déjà ce rôle supplémentaire');
@@ -153,7 +164,13 @@ CREATE OR REPLACE FUNCTION inscrire_joueur_match(
 )
 RETURNS jsonb AS $$
 DECLARE
-  v_result jsonb;
+  v_id uuid;
+  v_nom text;
+  v_telephone text;
+  v_equipe text;
+  v_role_joueur text;
+  v_statut_paiement text;
+  v_timestamp_inscription timestamptz;
 BEGIN
   INSERT INTO inscriptions_match (
     nom, telephone, equipe, role_joueur,
@@ -164,9 +181,20 @@ BEGIN
     p_inscrit_par_utilisateur_id, p_inscrit_par_role_supp
   )
   RETURNING id, nom, telephone, equipe, role_joueur, statut_paiement, timestamp_inscription
-  INTO v_result;
+  INTO v_id, v_nom, v_telephone, v_equipe, v_role_joueur, v_statut_paiement, v_timestamp_inscription;
   
-  RETURN jsonb_build_object('success', true, 'data', v_result);
+  RETURN jsonb_build_object(
+    'success', true, 
+    'data', jsonb_build_object(
+      'id', v_id,
+      'nom', v_nom,
+      'telephone', v_telephone,
+      'equipe', v_equipe,
+      'role_joueur', v_role_joueur,
+      'statut_paiement', v_statut_paiement,
+      'timestamp_inscription', v_timestamp_inscription
+    )
+  );
 EXCEPTION
   WHEN unique_violation THEN
     RETURN jsonb_build_object('success', false, 'error', 'Ce numéro de téléphone est déjà inscrit pour le match');

@@ -17,18 +17,29 @@ export function PointageMatch() {
       setError('Numéro de téléphone trop court');
       return;
     }
+    if (!user?.id) {
+      setError('Utilisateur non connecté');
+      return;
+    }
     setLoading(true);
     const phone = normalizePhone(telephone);
     const { data, error: err } = await supabase.rpc('pointer_paiement_match', {
       p_telephone: phone,
-      p_paiement_valide_par_utilisateur_id: user?.id,
+      p_paiement_valide_par_utilisateur_id: user.id,
     });
     setLoading(false);
 
     if (err) {
-      setError(err.message);
+      setError(err.message || 'Erreur lors de la validation du paiement');
+      console.error('Erreur pointage match:', err);
       return;
     }
+    
+    if (!data) {
+      setError('Réponse invalide du serveur');
+      return;
+    }
+    
     setResult(data as PaiementMatchResult);
     if ((data as PaiementMatchResult).success) {
       setRecent([{ 
@@ -36,6 +47,8 @@ export function PointageMatch() {
         equipe: (data as PaiementMatchResult).equipe || '', 
         time: new Date().toLocaleTimeString('fr-FR') 
       }, ...recent].slice(0, 10));
+    } else {
+      setError((data as PaiementMatchResult).error || 'Erreur lors de la validation');
     }
     setTelephone('');
   };
