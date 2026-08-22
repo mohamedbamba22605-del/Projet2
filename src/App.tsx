@@ -116,8 +116,8 @@ function MainApp() {
         {screen === 'saisie' && <SaisieJ1 onSaved={triggerRefresh} />}
         {screen === 'inscription' && <InscriptionContinue />}
         {screen === 'pointage' && <PointageJ2 onPointed={triggerRefresh} />}
-        {screen === 'inscription_match' && <InscriptionMatchScreen />}
-        {screen === 'pointage_match' && <PointageMatchScreen />}
+        {screen === 'inscription_match' && <InscriptionMatch />}
+        {screen === 'pointage_match' && <PointageMatch />}
         {screen === 'admin' && <Admin />}
       </main>
 
