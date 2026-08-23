@@ -294,10 +294,10 @@ function ExportTab() {
     setDone(false);
 
     const [participants, promesses, staff, spontanes] = await Promise.all([
-      supabase.from('participants').select('nom, telephone, genre, role_joueur, present, timestamp_pointage, created_at'),
+      supabase.from('participants').select('id, nom, telephone, genre, role_joueur, present, timestamp_pointage, created_at'),
       supabase.from('promesses').select('nom_personne, telephone, statut, timestamp_enregistrement, timestamp_pointage, recruteur_id'),
       supabase.from('inscriptions_staff').select('nom, telephone, statut, timestamp_enregistrement, timestamp_pointage'),
-      supabase.from('donneurs_spontanes').select('nom, telephone, timestamp_pointage'),
+      supabase.from('donneurs_spontanes').select('id, nom, telephone, timestamp_pointage'),
     ]);
 
     const recruteurMap = new Map<string, string>();
@@ -423,17 +423,39 @@ function RolesTab() {
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
-    const { data, error: err } = await supabase.rpc('obtenir_utilisateurs_avec_roles_supp');
     
-    if (err) {
-      setError(err.message);
+    // Récupérer tous les utilisateurs
+    const { data: usersData, error: usersError } = await supabase
+      .from('utilisateurs')
+      .select('id, prenom, role')
+      .order('prenom');
+    
+    if (usersError) {
+      setError(usersError.message);
       setLoading(false);
       return;
     }
     
-    if (data) {
-      setUsers(data.utilisateurs || []);
+    // Récupérer les rôles supplémentaires
+    const { data: rolesData, error: rolesError } = await supabase
+      .from('roles_supplementaires')
+      .select('utilisateur_id, role_supp, id');
+    
+    if (rolesError) {
+      console.error('Erreur lors de la récupération des rôles:', rolesError);
     }
+    
+    // Combiner les données
+    const usersWithRoles = (usersData || []).map(user => ({
+      id: user.id,
+      prenom: user.prenom,
+      role: user.role,
+      roles_supp: (rolesData || [])
+        .filter(r => r.utilisateur_id === user.id)
+        .map(r => ({ role: r.role_supp, id: r.id }))
+    }));
+    
+    setUsers(usersWithRoles);
     setLoading(false);
   };
 
