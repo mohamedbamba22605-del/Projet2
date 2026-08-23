@@ -97,12 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(parsed);
           // Fetch supplementary roles
           if (parsed) {
+            console.log('Session recovery - Utilisateur:', parsed);
             supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: parsed.id }).then(({ data: rolesData, error: rolesError }) => {
+              console.log('Session recovery - Rôles SQL response:', { rolesData, rolesError });
               if (rolesError) {
                 console.error('Erreur lors de la récupération des rôles (session):', rolesError);
               }
               if (rolesData) {
                 const roles = rolesData.roles || [];
+                console.log('Session recovery - Rôles trouvés:', roles);
                 setRolesSupplementaires(roles);
               }
             }).catch((err: Error) => {
@@ -150,11 +153,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Fetch supplementary roles
     const { data: rolesData, error: rolesError } = await supabase.rpc('obtenir_roles_supp', { p_utilisateur_id: u.id });
+    console.log('Login - Rôles SQL response:', { rolesData, rolesError, userId: u.id });
     if (rolesError) {
       console.error('Erreur lors de la récupération des rôles supplémentaires:', rolesError);
     }
     if (rolesData) {
       const roles = rolesData.roles || [];
+      console.log('Login - Rôles trouvés:', roles);
       setRolesSupplementaires(roles);
     }
     

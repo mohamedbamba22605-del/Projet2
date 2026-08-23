@@ -74,6 +74,15 @@ function MainApp() {
   }
 
   const visibleNav = NAV_ITEMS.filter((n) => {
+    console.log('Filtering nav item:', n.id, {
+      userRole: user.role,
+      isTreasury,
+      isController,
+      supplementaryRoles: n.supplementaryRoles,
+      rolesMatch: n.roles.includes(user.role),
+      treasurerMatch: n.supplementaryRoles?.includes('treasurer') && isTreasury,
+      controllerMatch: n.supplementaryRoles?.includes('controller') && isController
+    });
     if (n.roles.includes(user.role)) return true;
     if (n.supplementaryRoles) {
       if (n.supplementaryRoles.includes('treasurer') && isTreasury) return true;
@@ -81,6 +90,7 @@ function MainApp() {
     }
     return false;
   });
+  console.log('Final visible nav items:', visibleNav.map(n => n.id));
   const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
