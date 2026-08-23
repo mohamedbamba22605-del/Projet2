@@ -175,7 +175,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRoleSupplementaire = (role: RoleSupplementaire): boolean => {
     return rolesSupplementaires.some(r => {
       if (typeof r === 'string') return r === role;
-      if (r && typeof r === 'object' && 'role_supp' in r) return r.role_supp === role;
+      if (r && typeof r === 'object') {
+        // Vérifier d'abord 'role' (champ retourné par la fonction SQL)
+        if ('role' in r) return r.role === role;
+        // Vérifier aussi 'role_supp' (au cas où)
+        if ('role_supp' in r) return r.role_supp === role;
+      }
       return false;
     });
   };
