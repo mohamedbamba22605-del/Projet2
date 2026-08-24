@@ -98,6 +98,13 @@ export interface PointageResult {
   recruteur?: string;
 }
 
+export interface RecherchePersonneResult {
+  found: boolean;
+  type?: 'recruteur' | 'promesse' | 'staff' | 'spontane';
+  data?: any;
+  error?: string;
+}
+
 // Match Activity Interfaces
 export interface RoleSupplementaire {
   id: string;

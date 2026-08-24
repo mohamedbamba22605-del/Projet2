@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase, normalizePhone, PointageResult } from '@/lib/supabase';
-import { Search, Check, AlertCircle, Droplet, User, Phone, Trophy } from 'lucide-react';
+import { supabase, normalizePhone, PointageResult, type RecherchePersonneResult } from '@/lib/supabase';
+import { Search, Check, AlertCircle, Droplet, User, Phone, Trophy, Eye, X } from 'lucide-react';
 
 export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
   const [telephone, setTelephone] = useState('');
@@ -9,9 +9,38 @@ export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recent, setRecent] = useState<Array<{ nom: string; type: string; time: string }>>([]);
+  const [preview, setPreview] = useState<RecherchePersonneResult | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  const handleSearch = async () => {
+    setError('');
+    setPreview(null);
+    if (telephone.trim().length < 8) {
+      setError('Numéro de téléphone trop court');
+      return;
+    }
+    setSearching(true);
+    const phone = normalizePhone(telephone);
+    const { data, error: err } = await supabase.rpc('rechercher_personne_par_telephone', {
+      p_telephone: phone,
+    });
+    setSearching(false);
+
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    
+    if (data && data.found) {
+      setPreview(data);
+    } else {
+      setError(data?.error || 'Aucune personne trouvée avec ce numéro');
+    }
+  };
 
   const handlePointage = async () => {
     setError('');
+    setPreview(null);
     if (telephone.trim().length < 8) {
       setError('Numéro de téléphone trop court');
       return;
@@ -37,6 +66,17 @@ export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
     setNom('');
   };
 
+  const handleConfirmPointage = () => {
+    setPreview(null);
+    handlePointage();
+  };
+
+  const handleCancelPreview = () => {
+    setPreview(null);
+    setTelephone('');
+    setNom('');
+  };
+
   return (
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl shadow-md p-5 space-y-4">
@@ -44,7 +84,7 @@ export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
           <Droplet className="w-5 h-5 text-red-600" fill="currentColor" />
           Pointage des donneurs
         </h2>
-        <p className="text-sm text-gray-500">Recherchez par numéro de téléphone. Le système identifie automatiquement la source.</p>
+        <p className="text-sm text-gray-500">Recherchez d'abord la personne pour voir ses informations, puis confirmez le pointage.</p>
 
         {error && (
           <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
@@ -62,7 +102,7 @@ export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
               inputMode="numeric"
               value={telephone}
               onChange={(e) => setTelephone(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handlePointage()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Ex: 0701020304"
               className="w-full pl-10 pr-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-red-500 focus:outline-none"
               autoFocus
@@ -76,27 +116,117 @@ export function PointageJ2({ onPointed }: { onPointed?: () => void }) {
             type="text"
             value={nom}
             onChange={(e) => setNom(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handlePointage()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Laisser vide si déjà inscrit"
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-500 focus:outline-none"
           />
         </div>
 
-        <button
-          onClick={handlePointage}
-          disabled={telephone.length < 8 || loading}
-          className="w-full py-4 bg-red-600 text-white font-bold text-lg rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-        >
-          {loading ? (
-            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              <Search className="w-5 h-5" />
-              Pointer ce donneur
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={handleSearch}
+            disabled={telephone.length < 8 || searching}
+            className="py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            {searching ? (
+              <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Eye className="w-4 h-4" />
+                Rechercher
+              </>
+            )}
+          </button>
+          <button
+            onClick={handlePointage}
+            disabled={telephone.length < 8 || loading}
+            className="py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+              Pointer
             </>
-          )}
-        </button>
+            )}
+          </button>
+        </div>
       </div>
+
+      {preview && preview.found && (
+        <div className="bg-blue-50 rounded-2xl shadow-md p-5 border-2 border-blue-200">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <Eye className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-lg text-gray-900">Personne trouvée</p>
+              <div className="space-y-1 mt-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">{preview.data?.nom}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">{preview.data?.telephone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">Type:</span>
+                  <span className="font-medium capitalize">
+                    {preview.type === 'recruteur' ? 'Recruteur (lui-même)' :
+                     preview.type === 'promesse' ? 'Promesse' :
+                     preview.type === 'staff' ? 'Inscription Staff' :
+                     'Donneur spontané'}
+                  </span>
+                </div>
+                {preview.data?.genre && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Genre:</span>
+                    <span className="font-medium">{preview.data.genre === 'M' ? 'Masculin' : 'Féminin'}</span>
+                  </div>
+                )}
+                {preview.data?.role_joueur && (
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-gray-400" />
+                    <span className="font-medium capitalize">{preview.data.role_joueur}</span>
+                  </div>
+                )}
+                {preview.data?.statut && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Statut:</span>
+                    <span className="font-medium capitalize">{preview.data.statut}</span>
+                  </div>
+                )}
+                {preview.data?.present !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Présence:</span>
+                    <span className={`font-medium ${preview.data.present ? 'text-green-600' : 'text-gray-500'}`}>
+                      {preview.data.present ? 'Déjà pointé' : 'Non pointé'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={handleCancelPreview}
+              className="flex-1 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Annuler
+            </button>
+            <button
+              onClick={handleConfirmPointage}
+              className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Confirmer pointage
+            </button>
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className={`rounded-2xl shadow-md p-5 ${result.status === 'success' ? 'bg-green-50' : 'bg-orange-50'}`}>
